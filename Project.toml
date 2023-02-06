@@ -1,7 +1,9 @@
 [deps]
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
-HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
-JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
-Parquet2 = "98572fba-bba0-415d-956f-fa77e587d26d"
 SimilaritySearch = "053f045d-5466-53fd-b400-a066f88fe02a"
+
+[compat]
+FileIO = "1.16"
+JLD2 = "0.4"
+SimilaritySearch = "0.9"
