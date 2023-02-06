@@ -55,7 +55,7 @@ function main(kind, dist=SqL2Distance(), k=30)
     end
 
     # loading gold standard for this dataset
-    gold_knns = load(gfile, "knns")
+    gold_knns = jldopen(f->f["knns"], gfile)
     recall = macrorecall(gold_knns[1:k, :], knns)
     println("""
 
