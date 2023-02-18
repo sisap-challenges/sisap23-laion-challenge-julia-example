@@ -42,7 +42,12 @@ jobs:
             ${{ runner.os }}-test-
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
-      - run: |
-          julia --project=. -t auto src/simsearch.jl
-      - run: |
-          julia --project=. -t auto src/simsearch.jl
+      - name: Run benchmark
+        run: |
+          julia --project=. -t auto src/run.jl
+      - uses: actions/upload-artifact@v3
+        with:
+          name: Results
+          path: | 
+            results-k=30-size=100K.csv
+            results-k=30-size=300K.csv
