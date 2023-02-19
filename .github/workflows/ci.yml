@@ -49,5 +49,5 @@ jobs:
         with:
           name: Results
           path: | 
-            results-k=30-size=100K.csv
-            results-k=30-size=300K.csv
+            results-30-100K.csv
+            results-30-300K.csv
