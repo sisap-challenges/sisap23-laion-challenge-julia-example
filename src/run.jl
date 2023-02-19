@@ -90,11 +90,11 @@ end
 for dbsize in ("100K", "300K")
     k = 30
     outdir = "out-$dbsize"
-    #=
+    
     main("hamming", dbsize, k, BinaryHammingDistance(); outdir)
     main("pca32", dbsize, k; outdir)
     main("pca96", dbsize, k; outdir)
-=#
+
     prefix = endswith(dbsize, "K") ? "small-" : ""
     goldurl = "$MIRROR/public-queries/en-gold-standard-public/$(prefix)laion2B-en-public-gold-standard-$dbsize.h5"
     gfile = download_data(goldurl)
