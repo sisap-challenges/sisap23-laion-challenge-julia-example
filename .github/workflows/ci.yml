@@ -53,9 +53,11 @@ jobs:
           julia --project=. -t auto src/run.jl
           python3 eval/eval.py
           python3 eval/plot.py res.csv
+          python3 eval/plot.py res.csv --size 300K
       - uses: actions/upload-artifact@v3
         with:
           name: Results
           path: | 
-            results-30-100K.csv
-            results-30-300K.csv
+            res.csv
+            result_100K.png
+            result_300K.png
