@@ -27,10 +27,16 @@ jobs:
             arch: x86
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - uses: actions/setup-python@v4   
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
+      - name: Install dependencies
+        run: |
+          pip install matplotlib h5py
       - uses: actions/cache@v1
         env:
           cache-name: cache-artifacts
@@ -45,6 +51,8 @@ jobs:
       - name: Run benchmark
         run: |
           julia --project=. -t auto src/run.jl
+          python3 eval/eval.py
+          python3 eval/plot.py res.csv
       - uses: actions/upload-artifact@v3
         with:
           name: Results
