@@ -1,7 +1,7 @@
 using SimilaritySearch, JLD2, CSV, Glob
 using Downloads: download
 
-include("eval.jl")
+# include("eval.jl")
 
 function download_data(url; verbose=false)
     file = joinpath("data", basename(url))
@@ -64,7 +64,7 @@ function main(kind, dbsize, k, dist=SqL2Distance(); outdir)
     db = StrideMatrixDatabase(jldopen(f->f[kind], dfile))
 
     # loading or computing knns
-    path = joinpath(outdir, kind)
+    path = joinpath("result", outdir, kind)
     mkpath(path)
     @info "indexing, this can take a while!"
     indexname = build_searchgraph(dist, db, path)
@@ -95,10 +95,10 @@ for dbsize in ("100K", "300K")
     main("pca32", dbsize, k; outdir)
     main("pca96", dbsize, k; outdir)
 
-    prefix = endswith(dbsize, "K") ? "small-" : ""
-    goldurl = "$MIRROR/public-queries/en-gold-standard-public/$(prefix)laion2B-en-public-gold-standard-$dbsize.h5"
-    gfile = download_data(goldurl)
+    #prefix = endswith(dbsize, "K") ? "small-" : ""
+    #goldurl = "$MIRROR/public-queries/en-gold-standard-public/$(prefix)laion2B-en-public-gold-standard-$dbsize.h5"
+    #gfile = download_data(goldurl)
     
-    res = evalresults(glob(joinpath(outdir, "*", "result-k=$k-*.h5")), gfile, k)
-    CSV.write("results-$k-$dbsize.csv", res)
+    #res = evalresults(glob(joinpath(outdir, "*", "result-k=$k-*.h5")), gfile, k)
+    #CSV.write("results-$k-$dbsize.csv", res)
 end
