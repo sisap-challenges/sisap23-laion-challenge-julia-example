@@ -23,7 +23,8 @@ function build_searchgraph(dist::SemiMetric, db::AbstractDatabase, indexpath::St
     isfile(indexname) && return indexname
     opt = MinRecall(minrecall)
     callbacks = SearchGraphCallbacks(opt)
-    buildtime = @elapsed G = index!(SearchGraph(; db, dist, verbose); callbacks)
+    neighborhood = Neighborhood(logbase=1.5)
+    buildtime = @elapsed G = index!(SearchGraph(; db, dist, verbose); callbacks, neighborhood)
     optimtime = @elapsed optimize!(G, opt)
     meta = Dict(
         "buildtime" => buildtime,
@@ -41,9 +42,11 @@ function run_search(idx::SearchGraph, queries::AbstractDatabase, k::Integer, met
     resfile_ = replace(resfile_, ".h5" => "")
     step = 1.1f0
     delta = idx.search_algo.Δ / step
+    params = meta["params"]
     while delta < 2f0
         idx.search_algo.Δ = delta
         resfile = "$resfile_-delta=$delta.h5"
+        meta["params"] = "$params Δ=$Δ"
         run_search_(idx, queries, k, meta, resfile)
         delta *= step
     end
