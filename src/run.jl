@@ -1,7 +1,7 @@
 using SimilaritySearch, JLD2, CSV, Glob, LinearAlgebra
 using Downloads: download
 
-#include("eval.jl")
+include("eval.jl")
 
 function download_data(url; verbose=false)
     file = joinpath("data", basename(url))
@@ -37,7 +37,23 @@ function build_searchgraph(dist::SemiMetric, db::AbstractDatabase, indexpath::St
     indexname
 end
 
+function run_search(idx::SearchGraph, queries::AbstractDatabase, k::Integer, meta, resfile_::AbstractString)
+    resfile_ = replace(resfile_, ".h5" => "")
+    step = 1.1f0
+    delta = idx.search_algo.Δ / step
+    while delta < 2f0
+        idx.search_algo.Δ = delta
+        resfile = "$resfile_-delta=$delta.h5"
+        run_search_(idx, queries, k, meta, resfile)
+        delta *= step
+    end
+end
+
 function run_search(idx, queries::AbstractDatabase, k::Integer, meta, resfile::AbstractString)
+    run_search_(idx, queries, k, meta, resfile)
+end
+
+function run_search_(idx:, queries::AbstractDatabase, k::Integer, meta, resfile::AbstractString)
     querytime = @elapsed knns, dists = searchbatch(idx, queries, k)
     jldsave(resfile;
         knns, dists,
@@ -60,7 +76,7 @@ function dbread(file, kind, key)
         for col in eachcol(X)
             normalize!(col)
         end
-        @show size(X)
+
         StrideMatrixDatabase(X)
     elseif kind == "hamming"
         StrideMatrixDatabase(X)
@@ -113,7 +129,7 @@ function main(kind, key, dbsize, k; outdir)
     =#
 end
 
-for dbsize in ("300K",)
+for dbsize in ("100K",)
     k = 30
     outdir = joinpath("result", "out-$dbsize")
     
@@ -122,11 +138,11 @@ for dbsize in ("300K",)
     #main("pca96", "pca96", dbsize, k; outdir)
     main("clip768", "emb", dbsize, k; outdir)
 
-    #=prefix = endswith(dbsize, "K") ? "small-" : ""
+    prefix = endswith(dbsize, "K") ? "small-" : ""
     goldurl = "$MIRROR/public-queries/en-gold-standard-public/$(prefix)laion2B-en-public-gold-standard-$dbsize.h5"
     gfile = download_data(goldurl)
     
     res = evalresults(glob(joinpath(outdir, "*", "result-k=$k-*.h5")), gfile, k)
     CSV.write("results-$k-$dbsize.csv", res)
-    =#
+    
 end
