@@ -42,13 +42,12 @@ end
 
 function run_search(idx::SearchGraph, queries::AbstractDatabase, k::Integer, meta, resfile_::AbstractString)
     resfile_ = replace(resfile_, ".h5" => "")
-    step = 1.1f0
-    delta = idx.search_algo.Δ / step
+    step = 1.05f0
+    delta = idx.search_algo.Δ / step^2
     params = meta["params"]
     while delta < 2f0
         idx.search_algo.Δ = delta
         resfile = "$resfile_-delta=$delta.h5"
-        meta["params"] = "$params Δ=$delta"
         run_search_(idx, queries, k, meta, resfile)
         delta *= step
     end
