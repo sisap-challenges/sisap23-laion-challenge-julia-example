@@ -18,12 +18,14 @@ end
 
 function build_searchgraph(dist::SemiMetric, db::AbstractDatabase, indexpath::String; verbose=false, minrecall=0.9)
     algo = "SearchGraph"
-    params = "MinRecall=$minrecall"
-    indexname = joinpath(indexpath, "$algo-$params.jld2")
-    isfile(indexname) && return indexname
     opt = MinRecall(minrecall)
     callbacks = SearchGraphCallbacks(opt)
-    neighborhood = Neighborhood(logbase=1.5)
+    logbase = 1.5
+    neighborhood = Neighborhood(; logbase)
+
+    params = "MinRecall=$minrecall b=$logbase"
+    indexname = joinpath(indexpath, "$algo-$params.jld2")
+    isfile(indexname) && return indexname
     buildtime = @elapsed G = index!(SearchGraph(; db, dist, verbose); callbacks, neighborhood)
     optimtime = @elapsed optimize!(G, opt)
     meta = Dict(
