@@ -1,7 +1,7 @@
 using SimilaritySearch, JLD2, CSV, Glob, LinearAlgebra
 using Downloads: download
 
-# include("eval.jl")
+#include("eval.jl")
 
 function download_data(url; verbose=false)
     file = joinpath("data", basename(url))
@@ -60,13 +60,16 @@ function dbread(file, kind, key)
         for col in eachcol(X)
             normalize!(col)
         end
+        @show size(X)
+        StrideMatrixDatabase(X)
+    elseif kind == "hamming"
         StrideMatrixDatabase(X)
     else
         StrideMatrixDatabase(X)
     end
 end
 
-function main(kind, key, dbsize, k, dist=SqL2Distance(); outdir)
+function main(kind, key, dbsize, k; outdir)
     queriesurl = "$MIRROR/$kind/en-queries/public-queries-10k-$kind.h5"
     dataseturl = "$MIRROR/$kind/en-bundles/laion2B-en-$kind-n=$dbsize.h5"
 
@@ -74,18 +77,26 @@ function main(kind, key, dbsize, k, dist=SqL2Distance(); outdir)
     dfile = download_data(dataseturl)
 
     @info "loading $qfile and $dfile"
-    queries = dbread(qfile, kind, key)
     db = dbread(dfile, kind, key)
+    queries = dbread(qfile, kind, key)
+    dist = if kind == "clip768"
+        NormalizedCosineDistance()
+    elseif kind == "hamming"
+        BinaryHammingDistance()
+    else
+        SqL2Distance()
+    end
 
     # loading or computing knns
-    path = joinpath("result", outdir, kind)
+    path = joinpath(outdir, kind)
     mkpath(path)
     @info "indexing, this can take a while!"
-    indexname = build_searchgraph(dist, db, path)
+    indexname = build_searchgraph(dist, db, path; verbose=true)
+    
     # Stop multithreading
     # here we will stop the multithreading vm and start a single core one
     @info "loading the index"
-    G, meta = loadindex(indexname, db, staticgraph=true)
+    G, meta = loadindex(indexname, db, staticgraph=false)
     meta["size"] = dbsize
     meta["data"] = kind
     resfile = joinpath(path, "result-k=$k-" * replace(basename(indexname), ".jld2" => "") * ".h5")
@@ -104,17 +115,18 @@ end
 
 for dbsize in ("300K",)
     k = 30
-    outdir = "out-$dbsize"
+    outdir = joinpath("result", "out-$dbsize")
     
-    #main("hamming", "hamming", dbsize, k, BinaryHammingDistance(); outdir)
+    #main("hamming", "hamming", dbsize, k; outdir)
     #main("pca32", "pca32", dbsize, k; outdir)
     #main("pca96", "pca96", dbsize, k; outdir)
-    main("clip768", "emb", dbsize, k, NormalizedCosineDistance(); outdir)
+    main("clip768", "emb", dbsize, k; outdir)
 
-    #prefix = endswith(dbsize, "K") ? "small-" : ""
-    #goldurl = "$MIRROR/public-queries/en-gold-standard-public/$(prefix)laion2B-en-public-gold-standard-$dbsize.h5"
-    #gfile = download_data(goldurl)
+    #=prefix = endswith(dbsize, "K") ? "small-" : ""
+    goldurl = "$MIRROR/public-queries/en-gold-standard-public/$(prefix)laion2B-en-public-gold-standard-$dbsize.h5"
+    gfile = download_data(goldurl)
     
-    #res = evalresults(glob(joinpath(outdir, "*", "result-k=$k-*.h5")), gfile, k)
-    #CSV.write("results-$k-$dbsize.csv", res)
+    res = evalresults(glob(joinpath(outdir, "*", "result-k=$k-*.h5")), gfile, k)
+    CSV.write("results-$k-$dbsize.csv", res)
+    =#
 end
