@@ -1,4 +1,4 @@
-using SimilaritySearch, JLD2, CSV, Glob
+using SimilaritySearch, JLD2, CSV, Glob, LinearAlgebra
 using Downloads: download
 
 # include("eval.jl")
@@ -52,11 +52,15 @@ end
 
 MIRROR = "http://ingeotec.mx/~sadit/metric-datasets/LAION/SISAP23-Challenge"
 
-function dbread(file, key)
+function dbread(file, kind, key)
     X = jldopen(f->f[key], file)
-    if eltype(X) === Float16
-        @info "converting Float16 -> Float32"
-        StrideMatrixDatabase(Float32.(X))
+    if kind == "clip768"
+        @info "loading clip768 (converting Float16 -> Float32)"
+        X = Float32.(X)
+        for col in eachcol(X)
+            normalize!(col)
+        end
+        StrideMatrixDatabase(X)
     else
         StrideMatrixDatabase(X)
     end
@@ -70,8 +74,8 @@ function main(kind, key, dbsize, k, dist=SqL2Distance(); outdir)
     dfile = download_data(dataseturl)
 
     @info "loading $qfile and $dfile"
-    queries = dbread(qfile, key)
-    db = dbread(dfile, key)
+    queries = dbread(qfile, kind, key)
+    db = dbread(dfile, kind, key)
 
     # loading or computing knns
     path = joinpath("result", outdir, kind)
