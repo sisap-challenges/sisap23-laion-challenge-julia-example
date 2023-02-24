@@ -23,7 +23,7 @@ function build_searchgraph(dist::SemiMetric, db::AbstractDatabase, indexpath::St
     logbase = 1.5
     neighborhood = Neighborhood(; logbase)
 
-    params = "MinRecall=$minrecall b=$logbase"
+    params = "r=$minrecall b=$logbase"
     indexname = joinpath(indexpath, "$algo-$params.jld2")
     isfile(indexname) && return indexname
     buildtime = @elapsed G = index!(SearchGraph(; db, dist, verbose); callbacks, neighborhood)
@@ -49,7 +49,7 @@ function run_search(idx::SearchGraph, queries::AbstractDatabase, k::Integer, met
     while delta < 2f0
         idx.search_algo.Δ = delta
         resfile = "$resfile_-delta=$delta.h5"
-        meta["params"] = "$params Δ=$delta"
+        meta["params"] = "$params Δ=$(round(delta; digits=2))"
         run_search_(idx, queries, k, meta, resfile)
         delta *= step
     end
