@@ -48,7 +48,7 @@ function run_search(idx::SearchGraph, queries::AbstractDatabase, k::Integer, met
     while delta < 2f0
         idx.search_algo.Δ = delta
         resfile = "$resfile_-delta=$delta.h5"
-        meta["params"] = "$params Δ=$Δ"
+        meta["params"] = "$params Δ=$delta"
         run_search_(idx, queries, k, meta, resfile)
         delta *= step
     end
