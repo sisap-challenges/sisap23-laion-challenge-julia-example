@@ -52,7 +52,17 @@ end
 
 MIRROR = "http://ingeotec.mx/~sadit/metric-datasets/LAION/SISAP23-Challenge"
 
-function main(kind, dbsize, k, dist=SqL2Distance(); outdir)
+function dbread(file, key)::Matrix{Float32}
+    X = jldopen(f->f[key], file)
+    if eltype(X) === Float16
+        @info "converting Float16 -> Float32"
+        StrideMatrixDatabase(Float32.(X))
+    else
+        StrideMatrixDatabase(X)
+    end
+end
+
+function main(kind, key, dbsize, k, dist=SqL2Distance(); outdir)
     queriesurl = "$MIRROR/$kind/en-queries/public-queries-10k-$kind.h5"
     dataseturl = "$MIRROR/$kind/en-bundles/laion2B-en-$kind-n=$dbsize.h5"
 
@@ -60,8 +70,8 @@ function main(kind, dbsize, k, dist=SqL2Distance(); outdir)
     dfile = download_data(dataseturl)
 
     @info "loading $qfile and $dfile"
-    queries = StrideMatrixDatabase(jldopen(f->f[kind], qfile))
-    db = StrideMatrixDatabase(jldopen(f->f[kind], dfile))
+    queries = dbread(qfile, key)
+    db = dbread(dfile, key)
 
     # loading or computing knns
     path = joinpath("result", outdir, kind)
@@ -78,22 +88,24 @@ function main(kind, dbsize, k, dist=SqL2Distance(); outdir)
     @info "searching"
     run_search(G, queries, k, meta, resfile)
 
-    @info "running a bruteforce algorithm"
-
+    #=@info "running a bruteforce algorithm"
     meta["algo"] = "bruteforce"
     meta["buildtime"] = meta["optimtime"] = 0.0
     meta["params"] = "none"
     resfile = joinpath(path, "result-k=$k-bruteforce.h5")
+    
     run_search(ExhaustiveSearch(; dist, db), queries, k, meta, resfile)
+    =#
 end
 
-for dbsize in ("100K", "300K")
+for dbsize in ("300K",)
     k = 30
     outdir = "out-$dbsize"
     
-    main("hamming", dbsize, k, BinaryHammingDistance(); outdir)
-    main("pca32", dbsize, k; outdir)
-    main("pca96", dbsize, k; outdir)
+    #main("hamming", "hamming", dbsize, k, BinaryHammingDistance(); outdir)
+    #main("pca32", "pca32", dbsize, k; outdir)
+    #main("pca96", "pca96", dbsize, k; outdir)
+    main("clip768", "emb", dbsize, k, NormalizedCosineDistance(); outdir)
 
     #prefix = endswith(dbsize, "K") ? "small-" : ""
     #goldurl = "$MIRROR/public-queries/en-gold-standard-public/$(prefix)laion2B-en-public-gold-standard-$dbsize.h5"
