@@ -53,7 +53,7 @@ function run_search(idx, queries::AbstractDatabase, k::Integer, meta, resfile::A
     run_search_(idx, queries, k, meta, resfile)
 end
 
-function run_search_(idx:, queries::AbstractDatabase, k::Integer, meta, resfile::AbstractString)
+function run_search_(idx, queries::AbstractDatabase, k::Integer, meta, resfile::AbstractString)
     querytime = @elapsed knns, dists = searchbatch(idx, queries, k)
     jldsave(resfile;
         knns, dists,
