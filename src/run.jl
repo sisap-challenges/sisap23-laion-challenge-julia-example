@@ -52,7 +52,7 @@ end
 
 MIRROR = "http://ingeotec.mx/~sadit/metric-datasets/LAION/SISAP23-Challenge"
 
-function dbread(file, key)::Matrix{Float32}
+function dbread(file, key)
     X = jldopen(f->f[key], file)
     if eltype(X) === Float16
         @info "converting Float16 -> Float32"
