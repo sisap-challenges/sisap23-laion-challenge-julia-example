@@ -116,7 +116,7 @@ function main(kind, key, dbsize, k; outdir)
     path = joinpath(outdir, kind)
     mkpath(path)
     @info "indexing, this can take a while!"
-    indexname = build_searchgraph(dist, db, path; verbose=true)
+    indexname = build_searchgraph(dist, db, path; verbose=false)
     
     # Stop multithreading
     # here we will stop the multithreading vm and start a single core one
@@ -138,21 +138,23 @@ function main(kind, key, dbsize, k; outdir)
     =#
 end
 
-for dbsize in ("100K",)
-    k = 30
-    outdir = joinpath("result", "out-$dbsize")
+if !isinteractive()
+    for dbsize in ("100K",)
+        k = 30
+        outdir = joinpath("result", "out-$dbsize")
 
-    #main("hamming", "hamming", dbsize, k; outdir)
-    #main("pca32", "pca32", dbsize, k; outdir)
-    #main("pca96", "pca96", dbsize, k; outdir)
-    main("clip768", "emb", dbsize, k; outdir)
+        #main("hamming", "hamming", dbsize, k; outdir)
+        #main("pca32", "pca32", dbsize, k; outdir)
+        #main("pca96", "pca96", dbsize, k; outdir)
+        main("clip768", "emb", dbsize, k; outdir)
 
-    #=prefix = endswith(dbsize, "K") ? "small-" : ""
-    goldurl = "$MIRROR/public-queries/en-gold-standard-public/$(prefix)laion2B-en-public-gold-standard-$dbsize.h5"
-    gfile = download_data(goldurl)
-    
-    res = evalresults(glob(joinpath(outdir, "*", "result-k=$k-*.h5")), gfile, k)
-    CSV.write("results-$k-$dbsize.csv", res)
-    =#
-    
+        #=prefix = endswith(dbsize, "K") ? "small-" : ""
+        goldurl = "$MIRROR/public-queries/en-gold-standard-public/$(prefix)laion2B-en-public-gold-standard-$dbsize.h5"
+        gfile = download_data(goldurl)
+        
+        res = evalresults(glob(joinpath(outdir, "*", "result-k=$k-*.h5")), gfile, k)
+        CSV.write("results-$k-$dbsize.csv", res)
+        =#
+        
+    end
 end
