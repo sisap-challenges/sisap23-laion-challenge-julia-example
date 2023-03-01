@@ -40,8 +40,8 @@ python eval/eval.py
 
 Please visit <https://github.com/sisap-challenges/sisap23-laion-challenge-evaluation> for more details.
 
-## Python + Faiss
-You can find the Faiss example on <https://github.com/sisap-challenges/sisap23-laion-challenge-faiss-example>
+## How to take this to create my own
+You can fork this repository and polish it to create your solution or use it to see how input and output are made to adapt it to your similarity search pipeline. Please also take care of the ci workflow (see below).
 
 ## GitHub Actions: Continuous integration 
 
@@ -49,4 +49,9 @@ Please check the workflow that controls the continuous integration <https://gith
 
 You can monitor your runnings in the "Actions" tab of the GitHub panel: for instance, you can see some runs of this repository:
 <https://github.com/sisap-challenges/sisap23-laion-challenge-julia-example/actions>
+
+
+## Python + Faiss
+You can find the Faiss example on <https://github.com/sisap-challenges/sisap23-laion-challenge-faiss-example>
+
  

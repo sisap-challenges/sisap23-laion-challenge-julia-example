@@ -3,6 +3,11 @@ using Downloads: download
 
 include("eval.jl")
 
+"""
+    download_data(url; verbose=false)
+
+Download an url and save files in `data` directory
+"""
 function download_data(url; verbose=false)
     file = joinpath("data", basename(url))
 
@@ -16,6 +21,20 @@ function download_data(url; verbose=false)
     file
 end
 
+"""
+    build_searchgraph(dist::SemiMetric, db::AbstractDatabase, indexpath::String; verbose=false, minrecall=0.9)
+
+Creates a `SearchGraph` index on the database `db`
+
+- online documentation: <https://sadit.github.io/SimilaritySearch.jl/dev/>
+- joss paper: _SimilaritySearch. jl: Autotuned nearest neighbor indexes for Julia
+ES Tellez, G Ruiz - Journal of Open Source Software, 2022_ <https://joss.theoj.org/papers/10.21105/joss.04442.pdf>
+- arxiv paper: 
+```
+Similarity search on neighbor's graphs with automatic Pareto optimal performance and minimum expected quality setups based on hyperparameter optimization
+ES Tellez, G Ruiz - arXiv preprint arXiv:2201.07917, 2022
+```
+"""
 function build_searchgraph(dist::SemiMetric, db::AbstractDatabase, indexpath::String; verbose=false, minrecall=0.9)
     algo = "SearchGraph"
     opt = MinRecall(minrecall)
@@ -40,6 +59,15 @@ function build_searchgraph(dist::SemiMetric, db::AbstractDatabase, indexpath::St
     indexname
 end
 
+"""
+    run_search(idx::SearchGraph, queries::AbstractDatabase, k::Integer, meta, resfile_::AbstractString)
+
+Solve `queries` with the give index (it will iterate on some parameter to find similar setups)
+
+- `k` the number of nearest neighbors to retrieve
+- `meta` metadata to be stored with results
+- `resfile_` base name to create result files
+"""
 function run_search(idx::SearchGraph, queries::AbstractDatabase, k::Integer, meta, resfile_::AbstractString)
     resfile_ = replace(resfile_, ".h5" => "")
     step = 1.05f0
@@ -55,6 +83,16 @@ function run_search(idx::SearchGraph, queries::AbstractDatabase, k::Integer, met
     end
 end
 
+"""
+    run_search(idx, queries::AbstractDatabase, k::Integer, meta, resfile::AbstractString)
+
+Solve `queries` with the give index
+
+- `k` the number of nearest neighbors to retrieve
+- `meta` metadata to be stored with results
+- `resfile` performance output file
+
+"""
 function run_search(idx, queries::AbstractDatabase, k::Integer, meta, resfile::AbstractString)
     run_search_(idx, queries, k, meta, resfile)
 end
@@ -74,6 +112,12 @@ end
 
 MIRROR = "https://sisap-23-challenge.s3.amazonaws.com/SISAP23-Challenge"
 
+"""
+    dbread(file, kind, key)
+
+
+Loads a dataset stored in `file` and return it with its associated distance function, based on `kind` and `key` parameters.
+"""
 function dbread(file, kind, key)
     if kind == "clip768"
         @info "loading clip768 (converting Float16 -> Float32)"
@@ -101,6 +145,17 @@ function dbread(file, kind, key)
     end
 end
 
+
+"""
+    main(kind, key, dbsize, k; outdir)
+
+Runs an entire beenchmark
+
+- `kind`: the kind of data (clip768, hamming, pca32, pca96)
+- `key`: the key to access the database in each file (most use kind but clip768 will use "emb")
+- `dbsize`: string denoting the size of the dataset ("100K", "300K", "10M", "30M", "100M"), million scale should not be used in GitHub Actions.
+- `k`: the number of neighbors to find (official evaluation uses k=10, but you can use bigger values if your algorithm can take advantage of this)
+"""
 function main(kind, key, dbsize, k; outdir)
     queriesurl = "$MIRROR/$kind/en-queries/public-queries-10k-$kind.h5"
     dataseturl = "$MIRROR/$kind/en-bundles/laion2B-en-$kind-n=$dbsize.h5"
@@ -148,13 +203,13 @@ if !isinteractive()
         #main("pca96", "pca96", dbsize, k; outdir)
         main("clip768", "emb", dbsize, k; outdir)
 
+        ### Please use the evaluation of https://github.com/sisap-challenges/sisap23-laion-challenge-evaluation
         #=prefix = endswith(dbsize, "K") ? "small-" : ""
         goldurl = "$MIRROR/public-queries/en-gold-standard-public/$(prefix)laion2B-en-public-gold-standard-$dbsize.h5"
         gfile = download_data(goldurl)
         
-        res = evalresults(glob(joinpath(outdir, "*", "result-k=$k-*.h5")), gfile, k)
+        res = evalresults(glob(joinpath(outdir, "*", "*.h5")), gfile, k)
         CSV.write("results-$k-$dbsize.csv", res)
         =#
-        
     end
 end
