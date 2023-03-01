@@ -72,22 +72,32 @@ function run_search_(idx, queries::AbstractDatabase, k::Integer, meta, resfile::
     )
 end
 
-MIRROR = "http://ingeotec.mx/~sadit/metric-datasets/LAION/SISAP23-Challenge"
+MIRROR = "https://sisap-23-challenge.s3.amazonaws.com/SISAP23-Challenge"
 
 function dbread(file, kind, key)
-    X = jldopen(f->f[key], file)
     if kind == "clip768"
         @info "loading clip768 (converting Float16 -> Float32)"
-        X = Float32.(X)
+        X = jldopen(file) do f
+            Float32.(f["emb"])
+        end
+
         for col in eachcol(X)
             normalize!(col)
         end
 
-        StrideMatrixDatabase(X)
-    elseif kind == "hamming"
-        StrideMatrixDatabase(X)
+        return StrideMatrixDatabase(X), NormalizedCosineDistance()
+    end
+    
+    X = jldopen(file) do f
+        StrideMatrixDatabase(f[key])
+    end
+
+    if kind == "hamming"
+        X, BinaryHammingDistance()
+    elseif kind in ("pca32", "pca96")
+        X, SqL2Distance()
     else
-        StrideMatrixDatabase(X)
+        error("Unknown data $kind")
     end
 end
 
@@ -99,16 +109,9 @@ function main(kind, key, dbsize, k; outdir)
     dfile = download_data(dataseturl)
 
     @info "loading $qfile and $dfile"
-    db = dbread(dfile, kind, key)
-    queries = dbread(qfile, kind, key)
-    dist = if kind == "clip768"
-        NormalizedCosineDistance()
-    elseif kind == "hamming"
-        BinaryHammingDistance()
-    else
-        SqL2Distance()
-    end
-
+    db, dist = dbread(dfile, kind, key)
+    queries, _ = dbread(qfile, kind, key)
+    
     # loading or computing knns
     path = joinpath(outdir, kind)
     mkpath(path)
@@ -138,17 +141,18 @@ end
 for dbsize in ("100K",)
     k = 30
     outdir = joinpath("result", "out-$dbsize")
-    
+
     #main("hamming", "hamming", dbsize, k; outdir)
     #main("pca32", "pca32", dbsize, k; outdir)
     #main("pca96", "pca96", dbsize, k; outdir)
     main("clip768", "emb", dbsize, k; outdir)
 
-    prefix = endswith(dbsize, "K") ? "small-" : ""
+    #=prefix = endswith(dbsize, "K") ? "small-" : ""
     goldurl = "$MIRROR/public-queries/en-gold-standard-public/$(prefix)laion2B-en-public-gold-standard-$dbsize.h5"
     gfile = download_data(goldurl)
     
     res = evalresults(glob(joinpath(outdir, "*", "result-k=$k-*.h5")), gfile, k)
     CSV.write("results-$k-$dbsize.csv", res)
+    =#
     
 end
