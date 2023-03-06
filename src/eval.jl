@@ -1,11 +1,11 @@
 function evalresults(resultfiles, gfile, k)
-    gold_knns = jldopen(f->f["knns"], gfile)
+    gold_knns = jldopen(f->f["knns"][1:k, :], gfile)
     res = (data=[], size=[], algo=[], buildtime=[], querytime=[], params=[], recall=[])
     for resfile in resultfiles
         @info resfile
         reg = jldopen(resfile) do f
-            knns = f["knns"]
-            recall = macrorecall(gold_knns[1:k, :], knns)
+            knns = f["knns"][1:k, :]
+            recall = macrorecall(gold_knns, knns)
             (f["data"], f["size"], f["algo"], f["buildtime"], f["querytime"], f["params"], recall)  # aligned with res
         end
 

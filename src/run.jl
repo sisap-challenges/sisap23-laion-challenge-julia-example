@@ -110,7 +110,8 @@ function run_search_(idx, queries::AbstractDatabase, k::Integer, meta, resfile::
     )
 end
 
-MIRROR = "https://sisap-23-challenge.s3.amazonaws.com/SISAP23-Challenge"
+#MIRROR = "https://sisap-23-challenge.s3.amazonaws.com/SISAP23-Challenge"
+MIRROR = "http://ingeotec.mx/~sadit/metric-datasets/LAION/SISAP23-Challenge/"
 
 """
     dbread(file, kind, key)
@@ -136,9 +137,9 @@ function dbread(file, kind, key)
         StrideMatrixDatabase(f[key])
     end
 
-    if kind == "hamming"
+    if kind in ("hamming", "hammingv2")
         X, BinaryHammingDistance()
-    elseif kind in ("pca32", "pca96")
+    elseif kind in ("pca32", "pca32v2", "pca96", "pca96v2")
         X, SqL2Distance()
     else
         error("Unknown data $kind")
@@ -157,8 +158,8 @@ Runs an entire beenchmark
 - `k`: the number of neighbors to find (official evaluation uses k=10, but you can use bigger values if your algorithm can take advantage of this)
 """
 function main(kind, key, dbsize, k; outdir)
-    queriesurl = "$MIRROR/$kind/en-queries/public-queries-10k-$kind.h5"
-    dataseturl = "$MIRROR/$kind/en-bundles/laion2B-en-$kind-n=$dbsize.h5"
+    queriesurl = "$MIRROR/public-queries-10k-$kind.h5"
+    dataseturl = "$MIRROR/laion2B-en-$kind-n=$dbsize.h5"
 
     qfile = download_data(queriesurl)
     dfile = download_data(dataseturl)
@@ -198,17 +199,17 @@ if !isinteractive()
         k = 30
         outdir = joinpath("result", "out-$dbsize")
 
-        #main("hamming", "hamming", dbsize, k; outdir)
-        #main("pca32", "pca32", dbsize, k; outdir)
-        #main("pca96", "pca96", dbsize, k; outdir)
+        main("hammingv2", "hamming", dbsize, k; outdir)
+        main("pca32v2", "pca32", dbsize, k; outdir)
+        main("pca96v2", "pca96", dbsize, k; outdir)
         main("clip768", "emb", dbsize, k; outdir)
 
         ### Please use the evaluation of https://github.com/sisap-challenges/sisap23-laion-challenge-evaluation
-        #=prefix = endswith(dbsize, "K") ? "small-" : ""
-        goldurl = "$MIRROR/public-queries/en-gold-standard-public/$(prefix)laion2B-en-public-gold-standard-$dbsize.h5"
+        #=
+        goldurl = "$MIRROR/public-queries/en-gold-standard-public/laion2B-en-public-gold-standard-v2-$dbsize.h5"
         gfile = download_data(goldurl)
         
-        res = evalresults(glob(joinpath(outdir, "*", "*.h5")), gfile, k)
+        res = evalresults(glob(joinpath(outdir, "*", "*.h5")), gfile, 10)
         CSV.write("results-$k-$dbsize.csv", res)
         =#
     end
