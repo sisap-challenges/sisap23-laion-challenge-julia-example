@@ -60,4 +60,3 @@ jobs:
           path: | 
             res.csv
             result_100K.png
-            result_300K.png
