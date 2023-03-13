@@ -158,13 +158,13 @@ Runs an entire beenchmark
 - `k`: the number of neighbors to find (official evaluation uses k=10, but you can use bigger values if your algorithm can take advantage of this)
 """
 function main(kind, key, dbsize, k; outdir)
-    if kind == "clip768"
+    if kind == "clip768v2"
         queriesurl = "$MIRROR/clip768/en-queries/public-queries-10k-$kind.h5"
-        dataseturl = "$MIRROR/clip768/en-bundles/laion2B-en-$kind-n=$dbsize.h5"
     else
         queriesurl = "$MIRROR/public-queries-10k-$kind.h5"
-        dataseturl = "$MIRROR/laion2B-en-$kind-n=$dbsize.h5"
     end
+    
+    dataseturl = "$MIRROR/laion2B-en-$kind-n=$dbsize.h5"
 
     qfile = download_data(queriesurl)
     dfile = download_data(dataseturl)
@@ -207,7 +207,7 @@ if !isinteractive()
         main("hammingv2", "hamming", dbsize, k; outdir)
         main("pca32v2", "pca32", dbsize, k; outdir)
         main("pca96v2", "pca96", dbsize, k; outdir)
-        main("clip768", "emb", dbsize, k; outdir)
+        main("clip768v2", "emb", dbsize, k; outdir)
 
         ### Please use the evaluation of https://github.com/sisap-challenges/sisap23-laion-challenge-evaluation
         #=
