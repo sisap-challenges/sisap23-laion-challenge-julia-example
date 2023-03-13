@@ -110,8 +110,8 @@ function run_search_(idx, queries::AbstractDatabase, k::Integer, meta, resfile::
     )
 end
 
-#MIRROR = "https://sisap-23-challenge.s3.amazonaws.com/SISAP23-Challenge"
-MIRROR = "http://ingeotec.mx/~sadit/metric-datasets/LAION/SISAP23-Challenge/"
+MIRROR = "https://sisap-23-challenge.s3.amazonaws.com/SISAP23-Challenge"
+#MIRROR = "http://ingeotec.mx/~sadit/metric-datasets/LAION/SISAP23-Challenge/"
 
 """
     dbread(file, kind, key)
@@ -158,8 +158,13 @@ Runs an entire beenchmark
 - `k`: the number of neighbors to find (official evaluation uses k=10, but you can use bigger values if your algorithm can take advantage of this)
 """
 function main(kind, key, dbsize, k; outdir)
-    queriesurl = "$MIRROR/public-queries-10k-$kind.h5"
-    dataseturl = "$MIRROR/laion2B-en-$kind-n=$dbsize.h5"
+    if kind == "clip768"
+        queriesurl = "$MIRROR/clip768/en-queries/public-queries-10k-$kind.h5"
+        dataseturl = "$MIRROR/clip768/en-bundles/laion2B-en-$kind-n=$dbsize.h5"
+    else
+        queriesurl = "$MIRROR/public-queries-10k-$kind.h5"
+        dataseturl = "$MIRROR/laion2B-en-$kind-n=$dbsize.h5"
+    end
 
     qfile = download_data(queriesurl)
     dfile = download_data(dataseturl)
@@ -206,7 +211,7 @@ if !isinteractive()
 
         ### Please use the evaluation of https://github.com/sisap-challenges/sisap23-laion-challenge-evaluation
         #=
-        goldurl = "$MIRROR/public-queries/en-gold-standard-public/laion2B-en-public-gold-standard-v2-$dbsize.h5"
+        goldurl = "$MIRROR/laion2B-en-public-gold-standard-v2-$dbsize.h5"
         gfile = download_data(goldurl)
         
         res = evalresults(glob(joinpath(outdir, "*", "*.h5")), gfile, 10)
