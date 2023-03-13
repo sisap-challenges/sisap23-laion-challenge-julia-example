@@ -111,7 +111,7 @@ function run_search_(idx, queries::AbstractDatabase, k::Integer, meta, resfile::
 end
 
 MIRROR = "https://sisap-23-challenge.s3.amazonaws.com/SISAP23-Challenge"
-#MIRROR = "http://ingeotec.mx/~sadit/metric-datasets/LAION/SISAP23-Challenge/"
+MIRROR2 = "http://ingeotec.mx/~sadit/metric-datasets/LAION/SISAP23-Challenge/"
 
 """
     dbread(file, kind, key)
@@ -120,7 +120,7 @@ MIRROR = "https://sisap-23-challenge.s3.amazonaws.com/SISAP23-Challenge"
 Loads a dataset stored in `file` and return it with its associated distance function, based on `kind` and `key` parameters.
 """
 function dbread(file, kind, key)
-    if kind == "clip768"
+    if kind in ("clip768", "clip768v2")
         @info "loading clip768 (converting Float16 -> Float32)"
         X = jldopen(file) do f
             Float32.(f["emb"])
@@ -159,7 +159,7 @@ Runs an entire beenchmark
 """
 function main(kind, key, dbsize, k; outdir)
     if kind == "clip768v2"
-        queriesurl = "$MIRROR/clip768/en-queries/public-queries-10k-$kind.h5"
+        queriesurl = "$MIRROR2/public-queries-10k-clip768.h5"
     else
         queriesurl = "$MIRROR/public-queries-10k-$kind.h5"
     end
