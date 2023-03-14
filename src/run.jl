@@ -111,7 +111,7 @@ function run_search_(idx, queries::AbstractDatabase, k::Integer, meta, resfile::
 end
 
 MIRROR = "https://sisap-23-challenge.s3.amazonaws.com/SISAP23-Challenge"
-MIRROR2 = "http://ingeotec.mx/~sadit/metric-datasets/LAION/SISAP23-Challenge/"
+#MIRROR2 = "http://ingeotec.mx/~sadit/metric-datasets/LAION/SISAP23-Challenge/"
 
 """
     dbread(file, kind, key)
@@ -158,12 +158,7 @@ Runs an entire beenchmark
 - `k`: the number of neighbors to find (official evaluation uses k=10, but you can use bigger values if your algorithm can take advantage of this)
 """
 function main(kind, key, dbsize, k; outdir)
-    if kind == "clip768v2"
-        queriesurl = "$MIRROR2/public-queries-10k-clip768.h5"
-    else
-        queriesurl = "$MIRROR/public-queries-10k-$kind.h5"
-    end
-    
+    queriesurl = "$MIRROR/public-queries-10k-$kind.h5"
     dataseturl = "$MIRROR/laion2B-en-$kind-n=$dbsize.h5"
 
     qfile = download_data(queriesurl)
