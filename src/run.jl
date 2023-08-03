@@ -22,7 +22,7 @@ function download_data(url, file; verbose=false)
 end
 
 """
-    build_searchgraph(dist::SemiMetric, db::AbstractDatabase, indexpath::String; verbose=false, minrecall=0.9)
+    build_searchgraph(dist::SemiMetric, db::AbstractDatabase; verbose=false, minrecall=0.9)
 
 Creates a `SearchGraph` index on the database `db`
 
@@ -35,7 +35,7 @@ Similarity search on neighbor's graphs with automatic Pareto optimal performance
 ES Tellez, G Ruiz - arXiv preprint arXiv:2201.07917, 2022
 ```
 """
-function build_searchgraph(dist::SemiMetric, db::AbstractDatabase, indexpath::String; verbose=false, minrecall=0.9)
+function build_searchgraph(dist::SemiMetric, db::AbstractDatabase; verbose=false, minrecall=0.9)
     algo = "SearchGraph"
     opt = MinRecall(minrecall)
     callbacks = SearchGraphCallbacks(opt)
@@ -43,8 +43,6 @@ function build_searchgraph(dist::SemiMetric, db::AbstractDatabase, indexpath::St
     neighborhood = Neighborhood(; logbase)
 
     params = "r=$minrecall b=$logbase"
-    indexname = joinpath(indexpath, "$algo-$params.jld2")
-    isfile(indexname) && return indexname
     buildtime = @elapsed G = index!(SearchGraph(; db, dist, verbose); callbacks, neighborhood)
     optimtime = @elapsed optimize!(G, opt)
     meta = Dict(
@@ -168,10 +166,8 @@ function main(kind, key, dbsize, k; outdir)
     queries, _ = dbread(qfile, kind, key)
     
     # loading or computing knns
-    path = joinpath(outdir, kind)
-    mkpath(path)
     @info "indexing, this can take a while!"
-    G, meta = build_searchgraph(dist, db, path; verbose=true)
+    G, meta = build_searchgraph(dist, db; verbose=true)
     mem = 0
     for l in G.adj
          mem += sizeof(l)
@@ -179,7 +175,7 @@ function main(kind, key, dbsize, k; outdir)
 
     meta["size"] = dbsize
     meta["data"] = kind
-    resfile = joinpath(path, "searchgraph-kind=$kind-size=$dbsize-k=$k")
+    resfile = joinpath(outdir, "searchgraph-kind=$kind-size=$dbsize-k=$k")
     @info "searching"
     run_search(G, queries, k, meta, resfile)
 
@@ -187,7 +183,7 @@ function main(kind, key, dbsize, k; outdir)
     meta["algo"] = "bruteforce"
     meta["buildtime"] = meta["optimtime"] = 0.0
     meta["params"] = "none"
-    resfile = joinpath(path, "result-k=$k-bruteforce.h5")
+    resfile = joinpath(outdir, "result-k=$k-bruteforce.h5")
     
     run_search(ExhaustiveSearch(; dist, db), queries, k, meta, resfile)
     =#
@@ -201,6 +197,7 @@ if !isinteractive()
     
     for dbsize in ARGS
         outdir = joinpath("result", kind, dbsize)
+        mkpath(outdir)
         main(kind, key, dbsize, k; outdir)
 
         ### Please use the evaluation of https://github.com/sisap-challenges/sisap23-laion-challenge-evaluation
