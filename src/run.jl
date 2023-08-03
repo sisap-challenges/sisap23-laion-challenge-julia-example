@@ -119,7 +119,7 @@ MIRROR = "https://sisap-23-challenge.s3.amazonaws.com/SISAP23-Challenge"
 Loads a dataset stored in `file` and return it with its associated distance function, based on `kind` and `key` parameters.
 """
 function dbread(file, kind, key)
-    if kind in ("clip768", "clip768v2")
+    if startswith(kind, "clip768")
         @info "loading clip768 (converting Float16 -> Float32)"
         X = jldopen(file) do f
             Float32.(f["emb"])
@@ -136,9 +136,9 @@ function dbread(file, kind, key)
         StrideMatrixDatabase(f[key])
     end
 
-    if kind in ("hamming", "hammingv2")
+    if startswith(kind, "hamming")
         X, BinaryHammingDistance()
-    elseif kind in ("pca32", "pca32v2", "pca96", "pca96v2")
+    elseif startswith(kind, "pca")
         X, SqL2Distance()
     else
         error("Unknown data $kind")
@@ -194,10 +194,12 @@ function main(kind, key, dbsize, k; outdir)
 end
 
 if !isinteractive()
-    kind = "clip768v2"
-    key = "emb"
+    kind = get(ENV, "kind", "clip768v2")
+    key = get(ENV, "key", "emb")
+    # dbsize = get(ENV, "size", "300K")
+    k = parse(Int, get(ENV, "k", "30"))
+    
     for dbsize in ARGS
-        k = 30
         outdir = joinpath("result", kind, dbsize)
         main(kind, key, dbsize, k; outdir)
 
