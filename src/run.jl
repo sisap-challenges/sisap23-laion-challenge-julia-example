@@ -4,17 +4,17 @@ using Downloads: download
 include("eval.jl")
 
 """
-    download_data(url; verbose=false)
+    download_data(url, outfile; verbose=false)
 
-Download an url and save files in `data` directory
+Download an url and save as the given file name
 """
-function download_data(url; verbose=false)
-    file = joinpath("data", basename(url))
+function download_data(url, file; verbose=false)
 
     if isfile(file)
         println(stderr, "using local $file")
     else
         println(stderr, "downloading $url -> $file")
+        mkpath(dirname(file))
         download(url, file; verbose)
     end
 
@@ -54,9 +54,8 @@ function build_searchgraph(dist::SemiMetric, db::AbstractDatabase, indexpath::St
         "algo" => algo,
         "params" => params
     )
-    @info "saving the index"
-    saveindex(indexname, G; meta)
-    indexname
+
+    G, meta
 end
 
 """
@@ -161,8 +160,8 @@ function main(kind, key, dbsize, k; outdir)
     queriesurl = "$MIRROR/public-queries-10k-$kind.h5"
     dataseturl = "$MIRROR/laion2B-en-$kind-n=$dbsize.h5"
 
-    qfile = download_data(queriesurl)
-    dfile = download_data(dataseturl)
+    dfile = download_data(dataseturl, "data/$kind/$dbsize/dataset.h5")
+    qfile = download_data(queriesurl, "data/$kind/query.h5")
 
     @info "loading $qfile and $dfile"
     db, dist = dbread(dfile, kind, key)
@@ -172,15 +171,15 @@ function main(kind, key, dbsize, k; outdir)
     path = joinpath(outdir, kind)
     mkpath(path)
     @info "indexing, this can take a while!"
-    indexname = build_searchgraph(dist, db, path; verbose=false)
-    
-    # Stop multithreading
-    # here we will stop the multithreading vm and start a single core one
-    @info "loading the index"
-    G, meta = loadindex(indexname, db, staticgraph=false)
+    G, meta = build_searchgraph(dist, db, path; verbose=true)
+    mem = 0
+    for l in G.adj
+         mem += sizeof(l)
+    end
+
     meta["size"] = dbsize
     meta["data"] = kind
-    resfile = joinpath(path, "result-k=$k-" * replace(basename(indexname), ".jld2" => "") * ".h5")
+    resfile = joinpath(path, "searchgraph-kind=$kind-size=$dbsize-k=$k")
     @info "searching"
     run_search(G, queries, k, meta, resfile)
 
@@ -195,14 +194,12 @@ function main(kind, key, dbsize, k; outdir)
 end
 
 if !isinteractive()
-    for dbsize in ("100K",)
+    kind = "clip768v2"
+    key = "emb"
+    for dbsize in ARGS
         k = 30
-        outdir = joinpath("result", "out-$dbsize")
-
-        main("hammingv2", "hamming", dbsize, k; outdir)
-        main("pca32v2", "pca32", dbsize, k; outdir)
-        main("pca96v2", "pca96", dbsize, k; outdir)
-        main("clip768v2", "emb", dbsize, k; outdir)
+        outdir = joinpath("result", kind, dbsize)
+        main(kind, key, dbsize, k; outdir)
 
         ### Please use the evaluation of https://github.com/sisap-challenges/sisap23-laion-challenge-evaluation
         #=
