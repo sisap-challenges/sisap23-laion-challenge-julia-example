@@ -178,15 +178,35 @@ function main(kind, key, dbsize, k; outdir)
     resfile = joinpath(outdir, "searchgraph-kind=$kind-size=$dbsize-k=$k")
     @info "searching"
     run_search(G, queries, k, meta, resfile)
+end
 
-    #=@info "running a bruteforce algorithm"
+function main_bruteforce(kind, key, dbsize, k; outdir)
+    queriesurl = "$MIRROR/public-queries-10k-$kind.h5"
+    dataseturl = "$MIRROR/laion2B-en-$kind-n=$dbsize.h5"
+
+    dfile = download_data(dataseturl, "data/$kind/$dbsize/dataset.h5")
+    qfile = download_data(queriesurl, "data/$kind/query.h5")
+
+    @info "loading $qfile and $dfile"
+    db, dist = dbread(dfile, kind, key)
+    queries, _ = dbread(qfile, kind, key)
+    meta = Dict(
+        "buildtime" => 0,
+        "matrix_size" => size(db.matrix),
+        "optimtime" => 0,
+        "algo" => "bruteforce",
+        "params" => ""
+    )
+    
+    @info "running a bruteforce algorithm"
+    meta["size"] = dbsize
+    meta["data"] = kind
     meta["algo"] = "bruteforce"
     meta["buildtime"] = meta["optimtime"] = 0.0
     meta["params"] = "none"
-    resfile = joinpath(outdir, "result-k=$k-bruteforce.h5")
+    resfile = joinpath(outdir, "bruteforce-k=$k-kind=$kind-size=$dbsize.h5")
     
-    run_search(ExhaustiveSearch(; dist, db), queries, k, meta, resfile)
-    =#
+    run_search(ExhaustiveSearch(; dist, db), queries, k, meta, resfile) 
 end
 
 if !isinteractive()
@@ -198,7 +218,8 @@ if !isinteractive()
     for dbsize in ARGS
         outdir = joinpath("result", kind, dbsize)
         mkpath(outdir)
-        main(kind, key, dbsize, k; outdir)
+        #main(kind, key, dbsize, k; outdir)
+        main_bruteforce(kind, key, dbsize, k; outdir)
 
         ### Please use the evaluation of https://github.com/sisap-challenges/sisap23-laion-challenge-evaluation
         #=
